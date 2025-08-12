@@ -22,6 +22,9 @@ struct Args {
 }
 
 fn main() {
+    // Busca a chave secreta do ficheiro .env
+    dotenvy::dotenv().ok();
+
     let args = Args::parse();
 
     // Determina a chave secreta com base na prioridade

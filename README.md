@@ -55,62 +55,88 @@ hmac_generator [MENSAGEM] [OPÇÕES_DE_CHAVE]
 
 ### Exemplos de Uso
 
-A seguir estão exemplos das diferentes maneiras de fornecer a chave secreta, da mais segura para a menos segura.
+## Como Fornecer a Chave Secreta
 
-#### 1. Modo Interativo (Recomendado para uso manual)
+A ferramenta é flexível e busca a chave secreta na seguinte **ordem de prioridade**:
 
-Se nenhuma chave for fornecida via flags ou variáveis de ambiente, a ferramenta solicitará que você a digite de forma segura:
+1.  Flag de linha de comando (`--key` ou `--key-file`)
+2.  Variável de Ambiente (`HMAC_KEY`, que pode ser carregada por um ficheiro `.env`)
+3.  Prompt Interativo
+
+Isto permite que você tenha uma configuração para desenvolvimento local e a possa sobrescrever facilmente para um uso específico.
+
+### 1. Flags de Linha de Comando (Prioridade Máxima)
+
+Estas opções são explícitas e sobrescrevem todas as outras.
+
+#### Usando `--key-file` (Recomendado para Produção/Automação)
+
+Lê a chave de um ficheiro. Ideal para ambientes de produção e automação, como Docker Secrets ou ficheiros de configuração geridos.
 
 ```sh
-$ hmac_generator "A mensagem que eu quero autenticar"
+# Crie um ficheiro com a chave e restrinja as permissões
+echo "chave-de-producao" > prod.key
+chmod 600 prod.key
+
+# Execute o comando
+hmac_generator "Mensagem de produção" --key-file prod.key
+```
+
+#### Usando `--key` (Para Testes Rápidos)
+
+Fornece a chave diretamente. **Não recomendado para produção**, pois a chave pode ficar no histórico do seu shell.
+
+```sh
+hmac_generator "Mensagem de teste" --key "chave-insegura"
+```
+
+---
+
+### 2. Variável de Ambiente `HMAC_KEY`
+
+Esta é a forma ideal para desenvolvimento local e ambientes de CI/CD.
+
+#### Para Desenvolvimento Local com `.env`
+
+A ferramenta carrega automaticamente variáveis de um ficheiro `.env` na raiz do projeto.
+
+1.  **Crie o ficheiro `.env`** na raiz do seu projeto:
+
+    ```
+    # Ficheiro: .env
+    HMAC_KEY="minha-chave-secreta-de-desenvolvimento"
+    ```
+
+2.  **(CRUCIAL) Adicione `.env` ao seu ficheiro `.gitignore`** para NUNCA enviar segredos para o repositório.
+
+    ```
+    # Ficheiro: .gitignore
+    .env
+    ```
+
+3.  **Execute o programa sem flags.** Ele encontrará a chave no `.env`.
+
+    ```sh
+    cargo run -- "Minha mensagem de desenvolvimento"
+    ```
+
+4.  **(Opcional, mas recomendado)** Crie um ficheiro de exemplo `.env.example` para que outros saibam quais variáveis são necessárias.
+    ```
+    # Ficheiro: .env.example
+    HMAC_KEY=
+    ```
+
+---
+
+### 3. Prompt Interativo (Fallback Seguro)
+
+Se nenhuma das opções acima for usada, a ferramenta solicitará a chave de forma segura, sem a exibir na tela. Perfeito para uso manual.
+
+```sh
+$ hmac_generator "Uma mensagem para uso manual"
 
 Por favor, digite a chave secreta HMAC:
 (sua chave digitada aqui não será exibida)
-```
-
-**Saída:**
-
-```
-4e1a72d57e397554911e9a2b25684e2a149a4e3b1c6d8f8a85f4b4f1b4a9a9a5
-```
-
-#### 2. Usando um Ficheiro de Chave
-
-Esta é uma optima opção para automação e scripts.
-
-1.  Crie um ficheiro com sua chave secreta:
-    ```sh
-    echo "minha-chave-guardada-em-ficheiro" > secret.key
-    ```
-2.  (Importante) Restrinja as permissões do ficheiro:
-    ```sh
-    chmod 600 secret.key
-    ```
-3.  Execute o comando:
-    ```sh
-    hmac_generator "Esta mensagem usa uma chave de ficheiro" --key-file ./secret.key
-    ```
-
-#### 3. Usando uma Variável de Ambiente
-
-Ideal para ambientes de CI/CD e scripts de deploy.
-
-```sh
-# Linux/macOS
-export HMAC_KEY="minha-chave-super-secreta"
-hmac_generator "Autenticado via variável de ambiente"
-
-# Windows (PowerShell)
-$env:HMAC_KEY="minha-chave-super-secreta"
-.\hmac_generator.exe "Autenticado via variável de ambiente"
-```
-
-#### 4. Passando a Chave como Argumento (Não Seguro)
-
-**Atenção**: Use este método apenas para testes rápidos, pois a chave ficará visível no histórico do seu shell.
-
-```sh
-hmac_generator "Olá, Mundo!" --key "chave-insegura"
 ```
 
 ### Ajuda
